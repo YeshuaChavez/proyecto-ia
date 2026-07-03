@@ -263,7 +263,7 @@ export default function DashboardView({ coordinates, onSelectDepartment, backend
           },
           {
             label: "RMSE Ensemble",
-            value: metrics?.rmse_ensemble != null ? metrics.rmse_ensemble.toFixed(2) : "20.80",
+            value: metrics?.rmse_ensemble != null ? metrics.rmse_ensemble.toFixed(2) : "20.67",
             sub: "casos/100k hab.",
             icon: "query_stats",
             accent: "border-t-2 border-t-sky-500",
