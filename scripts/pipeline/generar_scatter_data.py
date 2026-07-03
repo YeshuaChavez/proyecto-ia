@@ -97,14 +97,16 @@ df_all = df.copy()
 df_all_scaled = df_all.copy()
 df_all_scaled[lstm_feats] = scaler_lstm.transform(df_all[lstm_feats])
 
-all_indices  = list(df_test.index)
-pred_lstm    = []
-y_test_lstm  = []
+all_indices    = list(df_test.index)
+pred_lstm      = []
+pred_lstm_log  = []
+y_test_lstm    = []
 
 for idx in all_indices:
     pos = df_all.index.get_loc(idx)
     if pos < SEQ_LEN:
         pred_lstm.append(np.nan)
+        pred_lstm_log.append(np.nan)
         y_test_lstm.append(np.nan)
         continue
     seq = df_all_scaled.iloc[pos - SEQ_LEN: pos][lstm_feats].values
@@ -112,9 +114,11 @@ for idx in all_indices:
     with torch.no_grad():
         p_log = model_lstm(x_t).item()
     pred_lstm.append(max(0.0, np.expm1(p_log)))
+    pred_lstm_log.append(p_log)
     y_test_lstm.append(df_test.loc[idx, "incidencia_dengue"])
 
-pred_lstm_arr = np.array(pred_lstm, dtype=float)
+pred_lstm_arr     = np.array(pred_lstm, dtype=float)
+pred_lstm_log_arr = np.array(pred_lstm_log, dtype=float)
 
 # ── Ensemble ───────────────────────────────────────────────────────────────────
 valid  = ~np.isnan(pred_lstm_arr)
@@ -153,6 +157,49 @@ with open(metrics_path, "w") as f:
 s3.upload(metrics_path, s3.PREFIX_MODELOS + "metrics.json")
 print("  [S3↑] metrics.json actualizado")
 
+# ── Agente 6 (dinámico): peso por régimen, calculado fila por fila ───────────
+# Percentiles SOLO con train (<=split_ano), igual que la evaluacion offline —
+# evita que el calculo retrospectivo "vea" el propio periodo de prueba.
+from agente_6_regimen import AgenteRegimen
+
+df_train_pct = df[df['ano'] <= split_ano].copy()
+p25_g = float(df_train_pct['incidencia_dengue'].quantile(0.25))
+p50_g = float(df_train_pct['incidencia_dengue'].quantile(0.50))
+p90_g = float(df_train_pct['incidencia_dengue'].quantile(0.90))
+
+pct_map = {}
+for (iso, adm), grp in df_train_pct.groupby(['iso_a0', 'adm_1_name']):
+    iso_u, adm_u = str(iso).strip().upper(), str(adm).strip().upper()
+    inc = grp['incidencia_dengue']
+    pct_map[(iso_u, adm_u)] = (
+        float(inc.quantile(0.25)), float(inc.quantile(0.50)),
+        max(float(inc.quantile(0.90)), p90_g),
+    )
+
+agente6 = AgenteRegimen(w_xgb_base=w_xgb, w_lstm_base=w_lstm)
+
+pred_dinamico = np.zeros(len(df_test))
+regimenes     = []
+df_test_reset = df_test.reset_index(drop=True)
+for i, row in df_test_reset.iterrows():
+    iso_u = str(row["iso_a0"]).strip().upper()
+    adm_u = str(row["adm_1_name"]).strip().upper()
+    lag1_log = float(row.get("incidencia_lag1", 0.0))
+    lag2_log = float(row.get("incidencia_lag2", 0.0))
+    lag1_raw = float(np.expm1(lag1_log))
+    p25, p50, p90 = pct_map.get((iso_u, adm_u), (p25_g, p50_g, p90_g))
+
+    r = agente6.detectar(lag1_raw, lag1_log, lag2_log, p25, p50, p90)
+    regimenes.append(r["regimen"])
+
+    llstm_log = pred_lstm_log_arr[i] if valid[i] else pred_xgb_log[i]
+    pred_dinamico[i] = np.expm1(r["w_xgb"] * pred_xgb_log[i] + r["w_lstm"] * llstm_log)
+
+r2_din   = r2_score(np.log1p(y_real), np.log1p(pred_dinamico))
+mae_din  = mean_absolute_error(y_real, pred_dinamico)
+rmse_din = np.sqrt(mean_squared_error(y_real, pred_dinamico))
+print(f"  Agente 6  — R²={r2_din*100:.2f}%  MAE={mae_din:.2f}  RMSE={rmse_din:.2f}")
+
 # ── Scatter data (muestra de 400 puntos representativos) ─────────────────────
 iso_col  = df_test["iso_a0"].values  if "iso_a0"    in df_test.columns else ["?"] * len(y_real)
 dept_col = df_test["adm_1_name"].values if "adm_1_name" in df_test.columns else ["?"] * len(y_real)
@@ -176,15 +223,22 @@ points_lstm = [
      "iso": str(iso_col[i]), "ano": int(ano_col[i])}
     for i in idx_sample
 ]
+points_agente6 = [
+    {"actual": round(float(y_real[i]), 2), "pred": round(float(pred_dinamico[i]), 2),
+     "iso": str(iso_col[i]), "ano": int(ano_col[i]), "regimen": regimenes[i]}
+    for i in idx_sample
+]
 
 scatter = {
     "ensemble": points_ens,
     "xgboost":  points_xgb,
     "lstm":     points_lstm,
+    "agente6":  points_agente6,
     "metricas": {
         "ensemble": {"r2": round(r2_ens, 4),   "mae": round(mae_ens, 2),   "rmse": round(rmse_ens, 2)},
         "xgboost":  {"r2": round(r2_xgb_v, 4), "mae": round(mae_xgb_v, 2), "rmse": round(rmse_xgb_v, 2)},
         "lstm":     {"r2": round(r2_lstm_v, 4), "mae": round(mae_lstm_v, 2),"rmse": round(rmse_lstm_v, 2)},
+        "agente6":  {"r2": round(r2_din, 4),   "mae": round(mae_din, 2),   "rmse": round(rmse_din, 2)},
     }
 }
 

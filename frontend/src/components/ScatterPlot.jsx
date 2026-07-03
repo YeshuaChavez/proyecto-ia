@@ -58,6 +58,7 @@ export default function ScatterPlot({ data, darkMode, metrics }) {
     { id: "ensemble", label: "Ensemble" },
     { id: "xgboost",  label: "XGBoost" },
     { id: "lstm",     label: "LSTM" },
+    { id: "agente6",  label: "Agente 6" },
   ];
 
   if (!data) {
