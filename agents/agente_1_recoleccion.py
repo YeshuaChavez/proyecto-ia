@@ -397,7 +397,7 @@ class AgenteRecoleccion:
         df = pd.read_csv(self.dengue_path, usecols=cols_to_use)
         print(f"   [OpenDengue] Casos crudos cargados. Dimensiones: {df.shape}")
         
-        # Filtrar por los 9 países, nivel departamental (o superior) y años 2014-2024
+        # Filtrar por los 8 países, nivel departamental (o superior) y años 2014-2024
         df_filtered = df[
             (df['ISO_A0'].isin(self.paises_iso)) &
             (df['Year'] >= 2014) &
@@ -407,12 +407,12 @@ class AgenteRecoleccion:
         # Estandarizar nombre nulos o vacíos
         df_filtered['adm_1_name'] = df_filtered['adm_1_name'].fillna('UNKNOWN')
         
-        print(f"   [OpenDengue] Casos filtrados (2014-2024, 9 países). Dimensiones: {df_filtered.shape}")
+        print(f"   [OpenDengue] Casos filtrados (2014-2024, 8 países). Dimensiones: {df_filtered.shape}")
         return df_filtered
 
     def recolectar_poblaciones(self):
         """
-        Ingesta los datos de población subnacional de los Censos Gubernamentales locales (los 9 archivos CSV).
+        Ingesta los datos de población subnacional de los Censos Gubernamentales locales (los 8 archivos CSV).
         """
         print("[Agente 1] Ingestando datos de población subnacional (Censos Gubernamentales)...")
         poblacion_dfs = []
