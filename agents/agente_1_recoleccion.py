@@ -38,20 +38,20 @@ class AgenteRecoleccion:
             
         # Rutas de entrada
         self.dengue_path = os.path.join(self.base_dir, "data", "raw", "Temporal_extract_V1_3.csv")
-        self.paises_iso = ['ARG', 'BOL', 'BRA', 'COL', 'ECU', 'MEX', 'NIC', 'PAN', 'PER']
+        self.paises_iso = ['ARG', 'BOL', 'BRA', 'COL', 'ECU', 'MEX', 'PAN', 'PER']
         
         # Nombres de países para geocodificación
         self.paises_nombres = {
             'ARG': 'Argentina', 'BOL': 'Bolivia', 'BRA': 'Brazil', 
-            'COL': 'Colombia', 'ECU': 'Ecuador', 'MEX': 'Mexico', 
-            'NIC': 'Nicaragua', 'PAN': 'Panama', 'PER': 'Peru'
+            'COL': 'Colombia', 'ECU': 'Ecuador', 'MEX': 'Mexico',
+            'PAN': 'Panama', 'PER': 'Peru'
         }
         
         # Coordenadas de contingencia (capitales o centros geográficos)
         self.fallback_coords = {
             'ARG': (-34.61, -58.38), 'BOL': (-17.78, -63.18), 'BRA': (-15.78, -47.93),
             'COL': (4.57, -74.30), 'ECU': (-2.17, -79.92), 'MEX': (23.63, -102.55),
-            'NIC': (12.86, -85.20), 'PAN': (8.53, -80.78), 'PER': (-9.19, -75.01)
+            'PAN': (8.53, -80.78), 'PER': (-9.19, -75.01)
         }
         
         # Poblaciones procesadas (Censos oficiales de cada país)
@@ -63,7 +63,6 @@ class AgenteRecoleccion:
             'COL': os.path.join(self.pob_dir, "poblacion_colombia.csv"),
             'ECU': os.path.join(self.pob_dir, "poblacion_ecuador.csv"),
             'MEX': os.path.join(self.pob_dir, "poblacion_mexico.csv"),
-            'NIC': os.path.join(self.pob_dir, "poblacion_nicaragua.csv"),
             'PAN': os.path.join(self.pob_dir, "poblacion_panama.csv"),
             'PER': os.path.join(self.pob_dir, "poblacion_peru.csv")
         }

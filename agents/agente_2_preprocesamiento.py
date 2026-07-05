@@ -307,8 +307,6 @@ class AgentePreprocesamiento:
         )
         df_base = self.calcular_incidencia(df_merged)
         df_base = df_base[df_base['ano'] <= 2022].reset_index(drop=True)
-        # Nicaragua excluida del sistema: series de casos incompletas y discontinuas
-        df_base = df_base[df_base['iso_a0'].str.upper() != 'NIC'].reset_index(drop=True)
 
         # Guardar dataset base (14 cols) → backend
         df_base.to_csv(self.output_base, index=False)
