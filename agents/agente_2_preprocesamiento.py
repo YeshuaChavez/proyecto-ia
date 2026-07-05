@@ -135,9 +135,9 @@ class AgentePreprocesamiento:
     def generar_features(self, df_base):
         """
         Genera las 73 variables predictoras a partir del dataset base de 14 columnas:
-          - Lags climáticos 1-3 (tmax, tmin, precipitación, humedad)
-          - Lags de incidencia 1-6
-          - Rolling means de incidencia (ventanas 3 y 6 meses)
+          - Lags climáticos 1-6 (tmax, tmin, precipitación, humedad)
+          - Lags de incidencia 1-12 (log-escala)
+          - Rolling means de incidencia (ventanas 3, 6, y 12 meses)
           - Vecinos espaciales: incidencia media de los 3 departamentos más cercanos, lags 1-6
           - Codificación cíclica del mes (sin/cos)
         """
@@ -260,9 +260,10 @@ class AgentePreprocesamiento:
         # Cambio interanual: ¿peor o mejor que el mismo mes del año pasado?
         df['cambio_interanual'] = df['incidencia_lag1'] - df['incidencia_lag12']
         # Tendencia mensual en log-escala (cambio mes a mes)
-        df['tendencia_1m'] = np.log1p(df['incidencia_lag1']) - np.log1p(df['incidencia_lag2'])
+        # incidencia_lag1/lag2 ya están en log1p (ver bloque de lags de incidencia) — no reaplicar
+        df['tendencia_1m'] = df['incidencia_lag1'] - df['incidencia_lag2']
         # Tendencia trimestral en log-escala (cambio últimos 3 meses)
-        df['tendencia_3m'] = np.log1p(df['incidencia_lag1']) - np.log1p(df['incidencia_lag3'])
+        df['tendencia_3m'] = df['incidencia_lag1'] - df['incidencia_lag3']
         # Fase ascendente: 1 si el brote está creciendo vs hace 3 meses
         df['fase_ascendente'] = (df['incidencia_lag1'] > df['incidencia_lag3']).astype(np.int8)
 
