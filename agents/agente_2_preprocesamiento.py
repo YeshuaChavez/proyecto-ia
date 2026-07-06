@@ -140,6 +140,9 @@ class AgentePreprocesamiento:
           - Rolling means de incidencia (ventanas 3, 6, y 12 meses)
           - Vecinos espaciales: incidencia media de los 3 departamentos más cercanos, lags 1-6
           - Codificación cíclica del mes (sin/cos)
+          - Indicadores binarios de COVID, ENSO (Niño/Niña), brote activo
+          - Features derivadas de clima: amplitud térmica, temperatura media, anomalía de precipitación
+          - Features derivadas de incidencia: aceleración, cambio interanual, tendencia
         """
         print("[Agente 2] Generando features predictoras (lags, rolling, vecinos, estacionalidad)...")
         df = df_base.copy()
