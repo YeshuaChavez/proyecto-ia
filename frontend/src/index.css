@@ -377,6 +377,18 @@ html.dark .custom-card:hover {
   box-shadow: 0px 8px 28px rgba(0, 0, 0, 0.45);
 }
 
+/* ─── Hero consensus card — fondo oscuro fijo, no invierte con el tema ─── */
+.hero-consensus-card {
+  background: linear-gradient(135deg, rgb(2 36 72) 0%, rgb(12 51 92) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0px 8px 28px rgba(2, 36, 72, 0.25);
+  color: rgb(255 255 255);
+}
+html.dark .hero-consensus-card {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0px 8px 28px rgba(0, 0, 0, 0.45);
+}
+
 /* ─── Fade-in Animation ─── */
 @keyframes fadeInUp {
   from {

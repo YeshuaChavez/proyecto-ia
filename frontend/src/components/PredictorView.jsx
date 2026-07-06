@@ -890,7 +890,7 @@ export default function PredictorView({
                 </div>
 
                 {/* Consensus Hero Card */}
-                <div className="relative overflow-hidden bg-primary text-on-primary rounded-xl p-xl shadow-xl flex flex-col items-center justify-center text-center animate-fade-in-up delay-150">
+                <div className="hero-consensus-card relative overflow-hidden rounded-xl p-xl shadow-xl flex flex-col items-center justify-center text-center animate-fade-in-up delay-150">
                   <div className="relative z-10 space-y-md w-full">
                     <div className="flex flex-col items-center gap-xs">
                       <div className="w-14 h-14 bg-secondary-container text-on-secondary-container rounded-full flex items-center justify-center mb-sm shadow-lg">
@@ -905,7 +905,7 @@ export default function PredictorView({
                         <span className="text-[72px] font-black tracking-tighter leading-none" style={{ fontVariantNumeric: "tabular-nums" }}>
                           {result.prediccion_ensemble.toFixed(1)}
                         </span>
-                        <span className="text-headline-sm text-surface-variant">casos / 100k hab.</span>
+                        <span className="text-headline-sm text-primary-fixed-dim">casos / 100k hab.</span>
                       </div>
                     </div>
 
@@ -917,7 +917,7 @@ export default function PredictorView({
 
                       {/* Régimen epidémico (Agente 6) */}
                       {result.regimen_epidemico && (
-                        <p className="text-[12px] text-surface-variant italic">
+                        <p className="text-[12px] text-primary-fixed-dim italic">
                           {result.regimen_descripcion}
                         </p>
                       )}
