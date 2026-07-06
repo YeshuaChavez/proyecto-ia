@@ -184,7 +184,7 @@ def get_features(
     ano: int = Query(None, description="Año (opcional, usa el último disponible si se omite)"),
     mes: int = Query(None, description="Mes (opcional, usa el último disponible si se omite)"),
 ):
-    """Devuelve el vector de 34 features del último período disponible sin correr ningún modelo."""
+    """Devuelve el vector de 73 features del último período disponible sin correr ningún modelo."""
     try:
         return prediction_service.obtener_features_departamento(iso_a0, adm_1_name, ano, mes)
     except ValueError as e:

@@ -23,7 +23,7 @@ class SimulationRequest(BaseModel):
     include_shap: bool = Field(False, description="Si True, calcula y retorna valores SHAP locales (más lento)")
 
 class RawPredictionRequest(BaseModel):
-    features: List[float] = Field(..., description="Vector de 23 características ordenadas")
+    features: List[float] = Field(..., description="Vector de 73 características ordenadas")
 
 class RiskLevel(BaseModel):
     nivel: str = Field(..., description="Descripción del riesgo: Endémico, Alerta, Epidemia")
