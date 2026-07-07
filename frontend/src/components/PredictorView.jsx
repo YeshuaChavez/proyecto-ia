@@ -1,6 +1,30 @@
 import React, { useState, useEffect, useCallback } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { LOGO_DENGUE_PREDICT_PNG } from "../assets/logoBase64";
+
+// Recomendaciones accionables por nivel de riesgo final (Agente 5), con matiz
+// segun el regimen detectado por el Agente 6 (tendencia ascendente/descendente).
+const RECOMENDACIONES_RIESGO = {
+  "Endémico": {
+    titulo: "Vigilancia de rutina",
+    texto: "La incidencia proyectada se encuentra dentro del rango histórico esperado para este departamento. Se recomienda mantener la vigilancia epidemiológica de rutina y las actividades preventivas habituales de control vectorial (eliminación de criaderos, fumigación programada).",
+  },
+  Alerta: {
+    titulo: "Atención reforzada",
+    texto: "La incidencia proyectada supera el nivel típico histórico del departamento. Se recomienda intensificar la vigilancia entomológica, reforzar las campañas de eliminación de criaderos en las zonas afectadas, y preparar la disponibilidad de insumos médicos ante un posible incremento sostenido de casos.",
+  },
+  Epidemia: {
+    titulo: "Alerta epidemiológica — acción inmediata",
+    texto: "La incidencia proyectada se ubica en el percentil superior histórico del departamento, consistente con un brote activo. Se recomienda activar protocolos de contingencia, desplegar brigadas de control vectorial focalizado de forma inmediata, y notificar a las autoridades de salud pública para la asignación prioritaria de recursos médicos y hospitalarios.",
+  },
+};
+
+const NOTA_REGIMEN = {
+  "Brote activo": "El régimen detectado (Brote activo) indica una tendencia ascendente sostenida — se prioriza la capacidad de respuesta rápida frente a un posible incremento adicional en los próximos meses.",
+  "Post-pico": "El régimen detectado (Post-pico) indica una tendencia descendente tras un pico reciente — se recomienda mantener la vigilancia sin sobredimensionar la asignación de nuevos recursos.",
+  "Pre-brote": "El régimen detectado (Pre-brote) indica una tendencia ascendente temprana — es un momento oportuno para intervenciones preventivas focalizadas antes de una posible escalada.",
+};
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -277,17 +301,23 @@ export default function PredictorView({
     const doc = new jsPDF();
     const fecha = new Date().toLocaleDateString("es-ES", { year: "numeric", month: "long", day: "numeric" });
 
+    try {
+      doc.addImage(LOGO_DENGUE_PREDICT_PNG, "PNG", 14, 8, 14, 14);
+    } catch (e) {
+      console.error("No se pudo insertar el logo:", e);
+    }
+
     doc.setFontSize(18);
     doc.setTextColor(30, 58, 95);
-    doc.text("DenguePredict", 14, 18);
+    doc.text("DenguePredict", 32, 18);
     doc.setFontSize(11);
     doc.setTextColor(100, 100, 100);
-    doc.text("Reporte de Predicción Individual — Sistema Multi-Agente (XGBoost + LSTM)", 14, 26);
-    doc.text(`Departamento: ${selectedDept ?? "—"}  |  País: ${selectedCountry ?? "—"}`, 14, 32);
-    doc.text(`Generado: ${fecha}`, 14, 38);
+    doc.text("Reporte de Predicción Individual — Sistema Multi-Agente (XGBoost + LSTM)", 14, 30);
+    doc.text(`Departamento: ${selectedDept ?? "—"}  |  País: ${selectedCountry ?? "—"}`, 14, 36);
+    doc.text(`Generado: ${fecha}`, 14, 42);
 
     autoTable(doc, {
-      startY: 46,
+      startY: 50,
       head: [["Modelo / Componente", "Predicción (casos/100k)", "Nivel de Riesgo"]],
       body: [
         ["Agente 3 — XGBoost", result.prediccion_ml?.toFixed(1) ?? "—", riskStyles[result.riesgo_ml]?.label ?? result.riesgo_ml ?? "—"],
@@ -315,11 +345,50 @@ export default function PredictorView({
       alternateRowStyles: { fillColor: [255, 251, 235] },
     });
 
+    let cursorY = doc.lastAutoTable?.finalY ?? finalY + 40;
+
     if (result.regimen_descripcion) {
-      const y2 = doc.lastAutoTable?.finalY ?? finalY + 40;
       doc.setFontSize(9);
       doc.setTextColor(100, 100, 100);
-      doc.text(doc.splitTextToSize(result.regimen_descripcion, 180), 14, y2 + 10);
+      const regimenLines = doc.splitTextToSize(result.regimen_descripcion, 180);
+      doc.text(regimenLines, 14, cursorY + 10);
+      cursorY += 10 + regimenLines.length * 4;
+    }
+
+    // ── Recomendaciones y alertas segun el nivel de riesgo final (Agente 5) ──
+    const RISK_RGB = {
+      "Endémico": [16, 185, 129],
+      Alerta: [234, 88, 12],
+      Epidemia: [186, 26, 26],
+    };
+    const rec = RECOMENDACIONES_RIESGO[result.riesgo_ensemble];
+    if (rec) {
+      const [r, g, b] = RISK_RGB[result.riesgo_ensemble] ?? [30, 58, 95];
+      const boxY = cursorY + 14;
+
+      doc.setFontSize(13);
+      doc.setTextColor(30, 58, 95);
+      doc.text("Recomendaciones y Alertas", 14, boxY);
+
+      const notaRegimen = NOTA_REGIMEN[result.regimen_epidemico];
+      const bodyLines = doc.splitTextToSize(
+        notaRegimen ? `${rec.texto}\n\n${notaRegimen}` : rec.texto,
+        170
+      );
+      const boxHeight = 16 + bodyLines.length * 5;
+
+      doc.setFillColor(r, g, b);
+      doc.rect(14, boxY + 4, 4, boxHeight - 4, "F");
+
+      doc.setFontSize(11);
+      doc.setTextColor(r, g, b);
+      doc.setFont(undefined, "bold");
+      doc.text(rec.titulo, 22, boxY + 10);
+
+      doc.setFont(undefined, "normal");
+      doc.setFontSize(9.5);
+      doc.setTextColor(60, 60, 60);
+      doc.text(bodyLines, 22, boxY + 17);
     }
 
     doc.save(`DenguePredict_Prediccion_${selectedDept ?? "reporte"}.pdf`);
