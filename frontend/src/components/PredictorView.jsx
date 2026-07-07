@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -268,6 +270,59 @@ export default function PredictorView({
     setSliderValues(defaults);
     setResult(null);
     setError(null);
+  };
+
+  const handleDownloadReport = () => {
+    if (!result) return;
+    const doc = new jsPDF();
+    const fecha = new Date().toLocaleDateString("es-ES", { year: "numeric", month: "long", day: "numeric" });
+
+    doc.setFontSize(18);
+    doc.setTextColor(30, 58, 95);
+    doc.text("DenguePredict", 14, 18);
+    doc.setFontSize(11);
+    doc.setTextColor(100, 100, 100);
+    doc.text("Reporte de Predicción Individual — Sistema Multi-Agente (XGBoost + LSTM)", 14, 26);
+    doc.text(`Departamento: ${selectedDept ?? "—"}  |  País: ${selectedCountry ?? "—"}`, 14, 32);
+    doc.text(`Generado: ${fecha}`, 14, 38);
+
+    autoTable(doc, {
+      startY: 46,
+      head: [["Modelo / Componente", "Predicción (casos/100k)", "Nivel de Riesgo"]],
+      body: [
+        ["Agente 3 — XGBoost", result.prediccion_ml?.toFixed(1) ?? "—", riskStyles[result.riesgo_ml]?.label ?? result.riesgo_ml ?? "—"],
+        ["Agente 4 — LSTM", result.prediccion_lstm?.toFixed(1) ?? "—", riskStyles[result.riesgo_lstm]?.label ?? result.riesgo_lstm ?? "—"],
+        ["Ensemble (Agente 5)", result.prediccion_ensemble?.toFixed(1) ?? "—", riskStyles[result.riesgo_ensemble]?.label ?? result.riesgo_ensemble ?? "—"],
+      ],
+      headStyles: { fillColor: [30, 58, 95] },
+      alternateRowStyles: { fillColor: [245, 248, 255] },
+    });
+
+    const finalY = doc.lastAutoTable?.finalY ?? 80;
+    doc.setFontSize(13);
+    doc.setTextColor(30, 58, 95);
+    doc.text("Ajuste Dinámico de Pesos (Agente 6)", 14, finalY + 12);
+
+    autoTable(doc, {
+      startY: finalY + 16,
+      head: [["Régimen Detectado", "Peso XGBoost", "Peso LSTM"]],
+      body: [[
+        result.regimen_epidemico ?? "—",
+        result.ensemble_w_xgb != null ? `${Math.round(result.ensemble_w_xgb * 100)}%` : "—",
+        result.ensemble_w_lstm != null ? `${Math.round(result.ensemble_w_lstm * 100)}%` : "—",
+      ]],
+      headStyles: { fillColor: [217, 119, 6] },
+      alternateRowStyles: { fillColor: [255, 251, 235] },
+    });
+
+    if (result.regimen_descripcion) {
+      const y2 = doc.lastAutoTable?.finalY ?? finalY + 40;
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.text(doc.splitTextToSize(result.regimen_descripcion, 180), 14, y2 + 10);
+    }
+
+    doc.save(`DenguePredict_Prediccion_${selectedDept ?? "reporte"}.pdf`);
   };
 
   const handlePredict = useCallback(async () => {
@@ -925,7 +980,7 @@ export default function PredictorView({
                       {/* Barra de pesos dinámica */}
                       {result.ensemble_w_xgb != null && (
                         <div className="w-full max-w-xs space-y-xs">
-                          <div className="flex justify-between text-[11px] text-surface-variant font-mono">
+                          <div className="flex justify-between text-[11px] text-primary-fixed-dim font-mono">
                             <span>XGB {Math.round(result.ensemble_w_xgb * 100)}%</span>
                             <span>LSTM {Math.round(result.ensemble_w_lstm * 100)}%</span>
                           </div>
@@ -944,6 +999,15 @@ export default function PredictorView({
                     </div>
                   </div>
                 </div>
+
+                {/* Descargar reporte de la prediccion */}
+                <button
+                  onClick={handleDownloadReport}
+                  className="w-full flex items-center justify-center gap-sm bg-surface-container hover:bg-surface-container-high text-on-surface font-bold text-label-lg py-md rounded-xl border border-outline-variant/40 transition-colors cursor-pointer"
+                >
+                  <span className="material-symbols-outlined">picture_as_pdf</span>
+                  Descargar Reporte de la Predicción
+                </button>
 
                 {/* Technical Note */}
                 <div className="bg-surface-container rounded-lg p-md border border-outline-variant/30 flex items-start gap-md text-[12px] leading-relaxed text-on-surface-variant">
