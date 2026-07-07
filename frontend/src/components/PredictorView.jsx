@@ -320,9 +320,9 @@ export default function PredictorView({
       startY: 50,
       head: [["Modelo / Componente", "Predicción (casos/100k)", "Nivel de Riesgo"]],
       body: [
-        ["Agente 3 — XGBoost", result.prediccion_ml?.toFixed(1) ?? "—", riskStyles[result.riesgo_ml]?.label ?? result.riesgo_ml ?? "—"],
-        ["Agente 4 — LSTM", result.prediccion_lstm?.toFixed(1) ?? "—", riskStyles[result.riesgo_lstm]?.label ?? result.riesgo_lstm ?? "—"],
-        ["Ensemble (Agente 5)", result.prediccion_ensemble?.toFixed(1) ?? "—", riskStyles[result.riesgo_ensemble]?.label ?? result.riesgo_ensemble ?? "—"],
+        ["Agente 3 — XGBoost", result.prediccion_ml?.toFixed(1) ?? "—", result.riesgo_ml?.nivel ?? "—"],
+        ["Agente 4 — LSTM", result.prediccion_lstm?.toFixed(1) ?? "—", result.riesgo_lstm?.nivel ?? "—"],
+        ["Ensemble (Agente 5)", result.prediccion_ensemble?.toFixed(1) ?? "—", result.riesgo_ensemble?.nivel ?? "—"],
       ],
       headStyles: { fillColor: [30, 58, 95] },
       alternateRowStyles: { fillColor: [245, 248, 255] },
@@ -361,9 +361,10 @@ export default function PredictorView({
       Alerta: [234, 88, 12],
       Epidemia: [186, 26, 26],
     };
-    const rec = RECOMENDACIONES_RIESGO[result.riesgo_ensemble];
+    const nivelRiesgoEnsemble = result.riesgo_ensemble?.nivel;
+    const rec = RECOMENDACIONES_RIESGO[nivelRiesgoEnsemble];
     if (rec) {
-      const [r, g, b] = RISK_RGB[result.riesgo_ensemble] ?? [30, 58, 95];
+      const [r, g, b] = RISK_RGB[nivelRiesgoEnsemble] ?? [30, 58, 95];
       const boxY = cursorY + 14;
 
       doc.setFontSize(13);
